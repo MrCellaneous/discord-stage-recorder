@@ -1,0 +1,6 @@
+node_modules/
+.env
+google-token.json
+recordings/
+models/
+.DS_Store
