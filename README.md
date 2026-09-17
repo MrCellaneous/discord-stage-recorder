@@ -10,9 +10,10 @@ Automation for coaching Q&A sessions held in a Discord **Stage** channel.
 1. stops OBS and the audio capture,
 2. transcribes locally with whisper.cpp, producing a timestamped, **speaker-labeled** transcript,
 3. asks Claude for a Q&A summary document (TL;DR, each question + answer, drills/takeaways, follow-ups),
-4. uploads the video to **YouTube** (unlisted by default),
-5. uploads video + transcript + summary (as a Google Doc) to a dated **Google Drive** folder,
-6. posts an embed with the links, the summary and transcript files, and the TL;DR to a **Discord** channel.
+4. uploads video + transcript + summary (as a Google Doc) to a dated **Google Drive** folder,
+5. posts an embed with the links, the summary and transcript files, and the TL;DR to a **Discord** channel.
+
+YouTube upload is built in but **off by default for now** — set `YOUTUBE_ENABLED=true` in `.env` to turn it on later; everything still goes to Drive either way.
 
 Everything for a session lands in `recordings/<date>_<topic>/` (`video.mkv`, `transcript.txt`, `summary.md`, `session.json`), so any failed step can be re-run.
 
@@ -20,7 +21,8 @@ Everything for a session lands in `recordings/<date>_<topic>/` (`video.mkv`, `tr
 Stage starts ──▶ OBS StartRecord ─────────────────────┐
              └─▶ bot joins Stage, per-speaker WAVs    │
                                                       ▼
-Stage ends ──▶ stop both ──▶ whisper.cpp ──▶ Claude summary ──▶ YouTube ──▶ Drive ──▶ Discord post
+Stage ends ──▶ stop both ──▶ whisper.cpp ──▶ Claude summary ──▶ Drive ──▶ Discord post
+                                                        (optional: YouTube, YOUTUBE_ENABLED=true)
 ```
 
 ## Setup (Mac)
@@ -42,16 +44,16 @@ On an M-series Mac `medium.en` transcribes roughly 5–10× faster than real tim
 ### 3. OBS
 1. OBS → **Tools → WebSocket Server Settings** → Enable, set a password → `OBS_PASSWORD`.
 2. Build a scene that captures what you want on video (your camera, screen share, or the Discord window) and add a **macOS Audio Capture** source pointing at Discord so the video has the session audio. Set **Settings → Output → Recording** format to MKV or fragmented MP4 so a crash never corrupts a recording.
-3. OBS must be open when a Stage starts. If it isn't, the bot still records audio (`OBS_OPTIONAL=true`) and skips the YouTube step.
+3. OBS must be open when a Stage starts. If it isn't, the bot still records audio (`OBS_OPTIONAL=true`) but there's no video to upload.
 
-### 4. Google (YouTube + Drive)
-1. https://console.cloud.google.com → create a project → **APIs & Services → Library**: enable **YouTube Data API v3** and **Google Drive API**.
+### 4. Google (Drive)
+1. https://console.cloud.google.com → create a project → **APIs & Services → Library**: enable **Google Drive API** (also enable **YouTube Data API v3** if you plan to turn YouTube on later).
 2. **OAuth consent screen**: External, add yourself as a test user (or publish). Scopes are requested at sign-in.
 3. **Credentials → Create → OAuth client ID → Desktop app** → copy the client ID/secret into `.env`.
 4. `npm run google-auth` — signs in once and saves `google-token.json`.
-5. Optional: `DRIVE_FOLDER_ID` = the ID from a Drive folder URL to keep sessions together; `YOUTUBE_PRIVACY=public|unlisted|private`.
+5. Optional: `DRIVE_FOLDER_ID` = the ID from a Drive folder URL to keep sessions together.
 
-> YouTube quota note: the default quota (10,000 units/day) allows ~6 uploads/day. Unverified OAuth apps upload videos as **private** regardless of the setting until the app passes Google's verification — start with `private`/`unlisted` and verify the app if you want public uploads straight from the bot.
+> YouTube is off by default (see the note above). Turning it on later just needs `YOUTUBE_ENABLED=true` in `.env` — no other setup changes. When you do, note the default quota (10,000 units/day) allows ~6 uploads/day, and unverified OAuth apps upload videos as **private** regardless of the setting until the app passes Google's verification.
 
 ### 5. Claude (summaries)
 Set `ANTHROPIC_API_KEY` from https://console.anthropic.com. Without it the bot still records, transcribes, uploads and posts — just no summary.
@@ -89,6 +91,6 @@ Discord sends the bot a separate Opus stream per speaker. Each is decoded into i
 
 ## Limits worth knowing
 - **No video from Discord.** Bots can't receive camera/screen-share streams; OBS on your Mac is the video source. Your Mac must be on, in OBS, and the bot running.
-- Discord attachments are capped at 10 MB on non-boosted servers, so the video goes to Discord as a YouTube/Drive link, not a file.
+- Discord attachments are capped at 10 MB on non-boosted servers, so the video goes to Discord as a Drive link (or YouTube link, if enabled), not a file.
 - Whisper runs after the session ends; a 60-minute Stage takes roughly 6–12 minutes on an M-series Mac with `medium.en`.
 - Speakers who join with an unusual client sometimes send no `speaking` events; if a speaker is missing from the transcript, the OBS mixed audio is still complete and `npm run process` on the video gives an unlabeled fallback transcript.

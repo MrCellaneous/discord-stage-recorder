@@ -34,6 +34,7 @@ export const config = {
     clientId: process.env.GOOGLE_CLIENT_ID || '',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     tokenPath: path.resolve(process.env.GOOGLE_TOKEN_PATH || './google-token.json'),
+    youtubeEnabled: bool(process.env.YOUTUBE_ENABLED, false),
     youtubePrivacy: process.env.YOUTUBE_PRIVACY || 'unlisted',
     youtubeTitlePrefix: process.env.YOUTUBE_TITLE_PREFIX ?? '',
     driveFolderId: process.env.DRIVE_FOLDER_ID || null,

@@ -111,9 +111,9 @@ export async function processSession(client, dir) {
     }
   }
 
-  // 3. YouTube
+  // 3. YouTube (disabled by default — see YOUTUBE_ENABLED in .env; video still goes to Drive below)
   let youtubeUrl = meta.youtubeUrl || null;
-  if (!youtubeUrl && meta.videoPath && fs.existsSync(meta.videoPath)) {
+  if (config.google.youtubeEnabled && !youtubeUrl && meta.videoPath && fs.existsSync(meta.videoPath)) {
     try {
       const tldr = summaryText?.match(/## TL;DR\s*([\s\S]*?)(?=\n## |$)/)?.[1]?.trim() || '';
       youtubeUrl = await uploadToYouTube({
